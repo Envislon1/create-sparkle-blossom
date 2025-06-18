@@ -88,7 +88,22 @@ const Login = () => {
         toast.error('Failed to send temporary password. Please try again.');
       } else {
         console.log('Password reset response:', data);
-        toast.success('Temporary password sent! Check your email and use it to set a new password.');
+        
+        // Check if we received a temporary password directly (for development/testing)
+        if (data.tempPassword) {
+          toast.success(`Temporary password: ${data.tempPassword}. Use this to login and change your password.`, {
+            duration: 10000, // Show for 10 seconds
+          });
+          
+          // Auto-fill the temporary password for convenience
+          setPassword(data.tempPassword);
+          setEmail(resetEmail);
+          setActiveTab('login');
+          setShowForgotPassword(false);
+        } else {
+          toast.success('Temporary password sent! Check your email and use it to set a new password.');
+        }
+        
         setShowChangePassword(true);
       }
     } catch (error) {
