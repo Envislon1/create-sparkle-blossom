@@ -83,7 +83,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Call our custom edge function to generate temporary password
+      // Call our custom edge function to generate temporary password and send via email
       const { data, error } = await supabase.functions.invoke('send-password-reset', {
         body: { email: resetEmail }
       });
@@ -92,22 +92,20 @@ const Login = () => {
         console.error('Password reset error:', error);
         toast.error('Failed to generate temporary password. Please try again.');
       } else {
-        if (data.tempPassword) {
-          // Display the temporary password with security warning
-          toast.success(`Temporary password: ${data.tempPassword}`, {
-            duration: 15000
-          });
-          
-          // Show a secure alert with instructions
-          alert(`Your temporary password is: ${data.tempPassword}\n\nIMPORTANT SECURITY NOTICE:\n• Write this password down immediately\n• Use it to login right away\n• Change your password immediately after logging in\n• This password will not be shown again\n• Do not share this password with anyone`);
-          
-          // Clear the form and go back to login
-          setShowForgotPassword(false);
-          setResetEmail('');
-          setActiveTab('login');
-        } else {
-          toast.success(data.message || 'Password reset processed successfully!');
-        }
+        // Show success message for email sent
+        toast.success('Temporary password sent! Please check your email inbox.', {
+          duration: 8000
+        });
+        
+        // Clear the form and go back to login
+        setShowForgotPassword(false);
+        setResetEmail('');
+        setActiveTab('login');
+        
+        // Show additional info
+        toast.info('Check your email for the temporary password, then use it to login and change your password.', {
+          duration: 10000
+        });
       }
     } catch (error) {
       console.error('Error during password reset:', error);
@@ -148,10 +146,10 @@ const Login = () => {
               <span className="text-2xl font-bold">EnergyTracker</span>
             </div>
             <CardTitle className="text-xl">
-              Generate Temporary Password
+              Reset Your Password
             </CardTitle>
             <CardDescription>
-              Enter your email address and we'll generate a temporary password that you can use to login and change your password
+              Enter your email address and we'll send you a temporary password that you can use to login and change your password
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -172,7 +170,7 @@ const Login = () => {
                 className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                 disabled={isLoading}
               >
-                {isLoading ? 'Generating...' : 'Generate Temporary Password'}
+                {isLoading ? 'Sending...' : 'Send Temporary Password'}
               </Button>
               <Button 
                 type="button" 
