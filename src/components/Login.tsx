@@ -21,6 +21,7 @@ const Login = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
 
   // Generate a random 6-digit temporary password
   const generateTempPassword = (): string => {
@@ -83,7 +84,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Call our custom edge function to generate temporary password and send via email
+      // Call our custom edge function to generate temporary password
       const { data, error } = await supabase.functions.invoke('send-password-reset', {
         body: { email: resetEmail }
       });
@@ -92,20 +93,20 @@ const Login = () => {
         console.error('Password reset error:', error);
         toast.error('Failed to generate temporary password. Please try again.');
       } else {
-        // Show success message for email sent
-        toast.success('Temporary password sent! Please check your email inbox.', {
-          duration: 8000
-        });
-        
-        // Clear the form and go back to login
-        setShowForgotPassword(false);
-        setResetEmail('');
-        setActiveTab('login');
-        
-        // Show additional info
-        toast.info('Check your email for the temporary password, then use it to login and change your password.', {
-          duration: 10000
-        });
+        // Store the temporary password and show change password form
+        if (data.tempPassword) {
+          setTempPassword(data.tempPassword);
+          toast.success('Temporary password generated! Please use it to set your new password.', {
+            duration: 8000
+          });
+          
+          // Switch to change password form
+          setShowChangePassword(true);
+        } else {
+          toast.success('If an account with this email exists, a temporary password has been generated.', {
+            duration: 8000
+          });
+        }
       }
     } catch (error) {
       console.error('Error during password reset:', error);
@@ -119,6 +120,7 @@ const Login = () => {
     setShowChangePassword(false);
     setShowForgotPassword(false);
     setResetEmail('');
+    setTempPassword('');
     toast.success('Password changed successfully! You can now login with your new password.');
   };
 
@@ -149,7 +151,7 @@ const Login = () => {
               Reset Your Password
             </CardTitle>
             <CardDescription>
-              Enter your email address and we'll send you a temporary password that you can use to login and change your password
+              Enter your email address and we'll generate a temporary password for you to change to a new one
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -165,13 +167,36 @@ const Login = () => {
                   placeholder="Enter your email address"
                 />
               </div>
+              {tempPassword && (
+                <div className="space-y-2">
+                  <Label htmlFor="temp-password">Your Temporary Password</Label>
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+                    <p className="text-sm text-orange-700 mb-2">Copy this temporary password:</p>
+                    <p className="font-mono text-lg font-bold text-orange-800 bg-white px-3 py-2 rounded border">
+                      {tempPassword}
+                    </p>
+                    <p className="text-xs text-orange-600 mt-2">
+                      Use this to login and immediately change your password
+                    </p>
+                  </div>
+                </div>
+              )}
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                 disabled={isLoading}
               >
-                {isLoading ? 'Sending...' : 'Send Temporary Password'}
+                {isLoading ? 'Generating...' : 'Generate Temporary Password'}
               </Button>
+              {tempPassword && (
+                <Button 
+                  type="button" 
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                  onClick={() => setShowChangePassword(true)}
+                >
+                  Proceed to Change Password
+                </Button>
+              )}
               <Button 
                 type="button" 
                 variant="ghost"

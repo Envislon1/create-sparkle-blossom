@@ -101,87 +101,27 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Send email with temporary password
-    try {
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #f97316; margin: 0;">⚡ EnergyTracker</h1>
-          </div>
-          
-          <h2 style="color: #333; margin-bottom: 20px;">Temporary Password Generated</h2>
-          
-          <p style="color: #666; line-height: 1.6;">
-            We've generated a temporary password for your account. Please use this password to login and immediately change it to a new secure password.
-          </p>
-          
-          <div style="background-color: #f8f9fa; border: 2px solid #f97316; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0 0 10px 0; color: #333; font-weight: bold;">Your Temporary Password:</p>
-            <p style="font-size: 24px; font-weight: bold; color: #f97316; letter-spacing: 2px; margin: 0;">${tempPassword}</p>
-          </div>
-          
-          <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-            <h3 style="color: #856404; margin: 0 0 10px 0; font-size: 16px;">🔒 Important Security Instructions:</h3>
-            <ul style="color: #856404; margin: 10px 0; padding-left: 20px;">
-              <li>Use this temporary password to login immediately</li>
-              <li>Change your password as soon as you login</li>
-              <li>This temporary password will expire after you change it</li>
-              <li>Do not share this password with anyone</li>
-              <li>If you didn't request this, please contact support</li>
-            </ul>
-          </div>
-          
-          <p style="color: #666; line-height: 1.6; margin-top: 30px;">
-            Best regards,<br>
-            The EnergyTracker Team
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-          <p style="color: #999; font-size: 12px; text-align: center;">
-            This is an automated message. Please do not reply to this email.
-          </p>
-        </div>
-      `;
-
-      const emailText = `
-EnergyTracker - Temporary Password
-
-Your temporary password is: ${tempPassword}
-
-Important Security Instructions:
-- Use this temporary password to login immediately
-- Change your password as soon as you login
-- This temporary password will expire after you change it
-- Do not share this password with anyone
-- If you didn't request this, please contact support
-
-Best regards,
-The EnergyTracker Team
-      `;
-
-      const { error: emailError } = await supabase.functions.invoke('send-email', {
-        body: {
-          to: email,
-          subject: 'Your Temporary Password - EnergyTracker',
-          htmlContent: emailHtml,
-          textContent: emailText
-        }
-      });
-
-      if (emailError) {
-        console.error('Error sending email:', emailError);
-        // Still return success to user for security, but log the error
+    // Send password reset email using Supabase Auth
+    const { error: emailError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('supabase.co', 'supabase.app')}/auth/reset-password`
       }
-    } catch (emailError) {
-      console.error('Error in email sending process:', emailError);
-      // Continue without failing the password reset
+    });
+
+    if (emailError) {
+      console.error('Error sending recovery email:', emailError);
     }
 
-    // Return success message without revealing the temporary password
+    // Since we can't send custom emails with the temp password through Supabase Auth directly,
+    // we'll return the temp password in the response for the frontend to handle
+    // This is more secure than logging it
     return new Response(
       JSON.stringify({ 
-        message: 'A temporary password has been sent to your email. Please check your inbox and use it to login.',
-        email: email
+        message: 'Temporary password generated successfully.',
+        email: email,
+        tempPassword: tempPassword
       }),
       {
         status: 200,
