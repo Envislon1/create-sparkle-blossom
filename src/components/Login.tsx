@@ -23,6 +23,11 @@ const Login = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
+  // Generate a random 6-digit temporary password
+  const generateTempPassword = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -79,22 +84,37 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Use Supabase's built-in password reset
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      console.log(`Processing password reset request for email: ${resetEmail}`);
       
+      // Call our custom edge function to generate temporary password
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: resetEmail }
+      });
+
       if (error) {
         console.error('Password reset error:', error);
-        toast.error('Failed to send password reset email. Please try again.');
+        toast.error('Failed to generate temporary password. Please try again.');
       } else {
-        toast.success('Password reset email sent! Check your email for the reset link.');
+        console.log('Password reset response:', data);
+        
+        if (data.tempPassword) {
+          // Display the temporary password directly
+          toast.success(`Temporary password generated: ${data.tempPassword}`, {
+            duration: 10000
+          });
+          
+          // Show an alert with the temporary password
+          alert(`Your temporary password is: ${data.tempPassword}\n\nPlease save this password and use it to login, then change it immediately.`);
+        } else {
+          toast.success(data.message || 'Password reset processed successfully!');
+        }
+        
         setShowForgotPassword(false);
         setResetEmail('');
       }
     } catch (error) {
       console.error('Error during password reset:', error);
-      toast.error('An error occurred while sending password reset email');
+      toast.error('An error occurred while processing password reset');
     } finally {
       setIsLoading(false);
     }
@@ -131,10 +151,10 @@ const Login = () => {
               <span className="text-2xl font-bold">EnergyTracker</span>
             </div>
             <CardTitle className="text-xl">
-              Reset Your Password
+              Generate Temporary Password
             </CardTitle>
             <CardDescription>
-              Enter your email address and we'll send you a password reset link
+              Enter your email address and we'll generate a temporary password for you
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -155,7 +175,7 @@ const Login = () => {
                 className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                 disabled={isLoading}
               >
-                {isLoading ? 'Sending...' : 'Send Reset Link'}
+                {isLoading ? 'Generating...' : 'Generate Temporary Password'}
               </Button>
               <Button 
                 type="button" 
