@@ -79,36 +79,22 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
-        body: { email: resetEmail }
+      // Use Supabase's built-in password reset
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       
       if (error) {
-        console.error('Edge function error:', error);
-        toast.error('Failed to send temporary password. Please try again.');
+        console.error('Password reset error:', error);
+        toast.error('Failed to send password reset email. Please try again.');
       } else {
-        console.log('Password reset response:', data);
-        
-        // Check if we received a temporary password directly (for development/testing)
-        if (data.tempPassword) {
-          toast.success(`Temporary password: ${data.tempPassword}. Use this to login and change your password.`, {
-            duration: 10000, // Show for 10 seconds
-          });
-          
-          // Auto-fill the temporary password for convenience
-          setPassword(data.tempPassword);
-          setEmail(resetEmail);
-          setActiveTab('login');
-          setShowForgotPassword(false);
-        } else {
-          toast.success('Temporary password sent! Check your email and use it to set a new password.');
-        }
-        
-        setShowChangePassword(true);
+        toast.success('Password reset email sent! Check your email for the reset link.');
+        setShowForgotPassword(false);
+        setResetEmail('');
       }
     } catch (error) {
-      console.error('Error calling edge function:', error);
-      toast.error('An error occurred while sending temporary password');
+      console.error('Error during password reset:', error);
+      toast.error('An error occurred while sending password reset email');
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +134,7 @@ const Login = () => {
               Reset Your Password
             </CardTitle>
             <CardDescription>
-              Enter your email address and we'll send you a temporary password
+              Enter your email address and we'll send you a password reset link
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -169,7 +155,7 @@ const Login = () => {
                 className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                 disabled={isLoading}
               >
-                {isLoading ? 'Sending...' : 'Send Temporary Password'}
+                {isLoading ? 'Sending...' : 'Send Reset Link'}
               </Button>
               <Button 
                 type="button" 
