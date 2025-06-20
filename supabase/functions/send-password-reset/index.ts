@@ -86,7 +86,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate temporary password
     const tempPassword = generateTempPassword();
-    console.log(`Generated temporary password for ${email}: ${tempPassword}`);
     
     // Update user password with the temporary password
     const { error: updateError } = await supabase.auth.admin.updateUserById(
@@ -126,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ error: 'Internal server error: ' + error.message }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }

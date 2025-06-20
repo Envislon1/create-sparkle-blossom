@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -84,8 +83,6 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      console.log(`Processing password reset request for email: ${resetEmail}`);
-      
       // Call our custom edge function to generate temporary password
       const { data, error } = await supabase.functions.invoke('send-password-reset', {
         body: { email: resetEmail }
@@ -95,22 +92,22 @@ const Login = () => {
         console.error('Password reset error:', error);
         toast.error('Failed to generate temporary password. Please try again.');
       } else {
-        console.log('Password reset response:', data);
-        
         if (data.tempPassword) {
-          // Display the temporary password directly
-          toast.success(`Temporary password generated: ${data.tempPassword}`, {
-            duration: 10000
+          // Display the temporary password with security warning
+          toast.success(`Temporary password: ${data.tempPassword}`, {
+            duration: 15000
           });
           
-          // Show an alert with the temporary password
-          alert(`Your temporary password is: ${data.tempPassword}\n\nPlease save this password and use it to login, then change it immediately.`);
+          // Show a secure alert with instructions
+          alert(`Your temporary password is: ${data.tempPassword}\n\nIMPORTANT SECURITY NOTICE:\n• Write this password down immediately\n• Use it to login right away\n• Change your password immediately after logging in\n• This password will not be shown again\n• Do not share this password with anyone`);
+          
+          // Clear the form and go back to login
+          setShowForgotPassword(false);
+          setResetEmail('');
+          setActiveTab('login');
         } else {
           toast.success(data.message || 'Password reset processed successfully!');
         }
-        
-        setShowForgotPassword(false);
-        setResetEmail('');
       }
     } catch (error) {
       console.error('Error during password reset:', error);
@@ -154,7 +151,7 @@ const Login = () => {
               Generate Temporary Password
             </CardTitle>
             <CardDescription>
-              Enter your email address and we'll generate a temporary password for you
+              Enter your email address and we'll generate a temporary password that you can use to login and change your password
             </CardDescription>
           </CardHeader>
           <CardContent>
